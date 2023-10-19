@@ -14,7 +14,7 @@ from datetime import datetime
 script_dir = os.path.dirname(os.path.abspath(__file__))
 out_dir = os.path.normpath(os.path.join(script_dir, "../out/"))
 # Create the full path to the execute.sh script
-execute_script_path = os.path.join(script_dir, "execute.sh")
+execute_script_path = os.path.join(script_dir, "../bspm/execute.sh")
 app = FastAPI(
     openapi_tags=[
         {"name": "Execute", "description": "Run/Returns the status of execution id: year-month-day"},
@@ -70,11 +70,10 @@ async def run_execute_script(date: str = Query(..., description="Date in the for
 @app.get("/executions", summary="Retrieve a list of user executions.", description="Returns a list of executions completed by the user.",tags=["Retrieve Executions"])
 async def get_user_executions():
     # Get the current user's username
-    username = os.getlogin()
+    username = "ubuntu"
 
     # Define the directory to list folders in
     user_directory = f"{out_dir}/bspm/{username}/"
-
     if os.path.exists(user_directory) and os.path.isdir(user_directory):
         folder_list = [f for f in os.listdir(user_directory) if os.path.isdir(os.path.join(user_directory, f))]
         execution_list = []
@@ -102,7 +101,7 @@ async def get_user_executions():
 
         return response
     else:
-        return {"error": f"The directory '{user_directory}' does not exist or is not a directory."}
+        return {"error": f"The directory '{user_directory}' does not exist or / is not a directory."}
 
 
 @app.get("/plot", summary="Plot the output image by passing the execution id and hour.", description="Returns the plot image.",tags=["Plot"])
@@ -111,7 +110,7 @@ async def get_plot_image(
     hour: int
 ):
     # Get the current user's username
-    username = os.getlogin()
+    username = "ubuntu"
     # Construct the filename pattern based on the input parameters
     filename_pattern = f"*_{executionid}_{hour:02d}h*.png"
     print(filename_pattern)
@@ -133,7 +132,7 @@ async def get_plot_image(
 @app.get("/download", summary="Download all the outputs by passing the execution id.", description="Returns the ZIP file of all outputs, including .png and .csv files.",tags=["Download"])
 async def download_execution_data(executionid: str):
     # Get the current user's username
-    username = os.getlogin()
+    username = "ubuntu"
     # Construct the path to the execution folder
     execution_path = os.path.join(f"{out_dir}/bspm/{username}/", executionid)
 

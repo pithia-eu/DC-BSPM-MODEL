@@ -6,7 +6,7 @@
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/Libs/iri2016
 # Define the app name
 app_name="BSPM_May2023.py"
-script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+script_dir="$(pwd)"
 # Define the parent directory of the script directory
 parent_dir=$(dirname "$script_dir")
 
@@ -56,7 +56,7 @@ fi
 
 # Define the output folder path
 output_folder="$parent_dir/out/bspm/$USER/$executionid"
-python_command="python3.9 $app_name --year $year --month $month --day $day --executionid $executionid"
+python_command="python3.9 $script_dir/../bspm/$app_name --year $year --month $month --day $day --executionid $executionid"
 #echo "$output_folder"
 # Check if the output folder exists; create it if it doesn't
 if [ ! -d "$output_folder" ]; then
