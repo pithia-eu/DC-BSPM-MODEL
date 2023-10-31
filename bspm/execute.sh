@@ -64,11 +64,11 @@ if [ ! -d "$output_folder" ]; then
   # echo "Created output folder: $output_folder"
   #IRI0_IRILIB64PATH=irilib64.so LD_PRELOAD=iri0.so python3.9 "$app_name" --year "$year" --month "$month" --day "$day" --executionid "$executionid" &
   nohup $python_command > $output_folder/app.log 2>&1 &
-  echo "{\"code\": 0, \"msg\": \"Started a new instance of $app_name with execution ID $executionid\",\"id\":\"$executionid\",\"status\":\"start\"}"
+  echo "{\"code\": 0, \"msg\": \"Started a new execution of $app_name by date $executionid\",\"date\":\"$executionid\",\"status\":\"start\"}"
 else
   if pgrep -f "$app_name.*--executionid $executionid" > /dev/null; then
-    echo "{\"code\": 0, \"msg\": \"App $app_name with execution ID $executionid is already running.\",\"id\":\"$executionid\",\"status\":\"progressing\"}"
+    echo "{\"code\": 0, \"msg\": \"App $app_name on date $executionid is already running.\",\"date\":\"$executionid\",\"status\":\"progressing\"}"
   else
-    echo "{\"code\": 1, \"msg\": \"App $app_name with execution ID $executionid is completed.\",\"id\":\"$executionid\",\"status\":\"completed\"}"
+    echo "{\"code\": 1, \"msg\": \"App $app_name on date $executionid is completed.\",\"date\":\"$executionid\",\"status\":\"completed\"}"
   fi
 fi

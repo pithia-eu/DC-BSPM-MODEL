@@ -22,8 +22,8 @@ app = FastAPI(
         {"name": "Plot", "description": "Returns the plot image"},
         {"name": "Download", "description": "Returns the ZIP file of all outputs, including .png and .csv files."},
     ],
-    title="BPIM API: 3D-Kinetic plasmasphere model",
-    description="The BPIM is a 3D-Kinetic semiempirical model of the plasmasphere developed by the Solar Wind Division of the Royal Belgian Institute for Space Aeronomy.",
+    title="BSPM API: 3D-Kinetic plasmasphere model",
+    description="The BSPM is a 3D-Kinetic semiempirical model of the plasmasphere developed by the Solar Wind Division of the Royal Belgian Institute for Space Aeronomy.",
     version="1.0.0",
 )
 
@@ -31,7 +31,7 @@ class ExecuteRequest(BaseModel):
     date: str
 
 
-@app.post("/execute", summary="Execute the BPIM by passing the date.", description="Returns the status of execution id: year-month-day", tags=["Execute"])
+@app.post("/execute", summary="Execute the BSPM by passing the date.", description="Returns the status of execution by date: year-month-day", tags=["Execute"])
 async def run_execute_script(date: str = Query(..., description="Date in the format 'YYYY-MM-DD'")):
     # Prepare the command to run execute.sh
     #command = f"{execute_script_path} --year {request.year} --month {request.month} --day {request.day}"
@@ -88,7 +88,7 @@ async def get_user_executions():
             status = "completed" if num_png_files == 24 else "progressing"
             # Add execution information to the list
             execution_info = {
-                "executionid": folder,
+                "date": folder,
                 "status": status,
             }
             execution_list.append(execution_info)
@@ -104,15 +104,15 @@ async def get_user_executions():
         return {"error": f"The directory '{user_directory}' does not exist or / is not a directory."}
 
 
-@app.get("/plot", summary="Plot the output image by passing the execution id and hour.", description="Returns the plot image.",tags=["Plot"])
+@app.get("/plot", summary="Plot the output image by passing the execution date and hour.", description="Returns the plot image.",tags=["Plot"])
 async def get_plot_image(
-    executionid: str,
+    date: str,
     hour: int
 ):
     # Get the current user's username
     username = "ubuntu"
     # Construct the filename pattern based on the input parameters
-    filename_pattern = f"*_{executionid}_{hour:02d}h*.png"
+    filename_pattern = f"*_{date}_{hour:02d}h*.png"
     print(filename_pattern)
     # Use glob to search for files matching the pattern
     matching_files = glob.glob(os.path.join(f"{out_dir}/bspm/{username}/{executionid}/", filename_pattern))
@@ -129,17 +129,17 @@ async def get_plot_image(
         raise HTTPException(status_code=404, detail="Image not found")
 
 
-@app.get("/download", summary="Download all the outputs by passing the execution id.", description="Returns the ZIP file of all outputs, including .png and .csv files.",tags=["Download"])
-async def download_execution_data(executionid: str):
+@app.get("/download", summary="Download all the outputs by passing the execution date.", description="Returns the ZIP file of all outputs, including .png and .csv files.",tags=["Download"])
+async def download_execution_data(date: str):
     # Get the current user's username
     username = "ubuntu"
     # Construct the path to the execution folder
-    execution_path = os.path.join(f"{out_dir}/bspm/{username}/", executionid)
+    execution_path = os.path.join(f"{out_dir}/bspm/{username}/", date)
 
     # Check if the execution folder exists
     if os.path.exists(execution_path) and os.path.isdir(execution_path):
         # Create a temporary zip file
-        zip_filename = f"{executionid}.zip"
+        zip_filename = f"{date}.zip"
         zip_filepath = os.path.join(f"{out_dir}/bspm/{username}/", zip_filename)
         with zipfile.ZipFile(zip_filepath, "w", zipfile.ZIP_DEFLATED) as zipf:
             # Recursively add all files and subdirectories to the zip file
