@@ -17,7 +17,7 @@ out_dir = os.path.normpath(os.path.join(script_dir, "../out/"))
 execute_script_path = os.path.join(script_dir, "../bspm/execute.sh")
 app = FastAPI(
     openapi_tags=[
-        {"name": "Execute", "description": "Run/Returns the status of execution id: year-month-day"},
+        {"name": "Execute", "description": "Run/Returns the status of execution by date: year-month-day"},
         {"name": "Retrieve Executions", "description": "Returns a list of executions completed by the user"},
         {"name": "Plot", "description": "Returns the plot image"},
         {"name": "Download", "description": "Returns the ZIP file of all outputs, including .png and .csv files."},
@@ -32,7 +32,7 @@ class ExecuteRequest(BaseModel):
 
 
 @app.post("/execute", summary="Execute the BSPM by passing the date.", description="Returns the status of execution by date: year-month-day", tags=["Execute"])
-async def run_execute_script(date: str = Query(..., description="Date in the format 'YYYY-MM-DD'")):
+async def run_execute_script(date: str = Query(..., description="Date in the format 'YYYY-MM-DD'"), rerun: bool = Query(False, description="Force the script to rerun even if the output files already exist.")):
     # Prepare the command to run execute.sh
     #command = f"{execute_script_path} --year {request.year} --month {request.month} --day {request.day}"
     #if request.executionid:
@@ -45,6 +45,8 @@ async def run_execute_script(date: str = Query(..., description="Date in the for
         day = input_date.day
         # Run the execute.sh script and capture its output
         command = f"{execute_script_path} --year {year} --month {month} --day {day}"
+        if rerun:
+            command += " --rerun true"
         output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=False, encoding="utf-8")
 
         # Parse the output as JSON
@@ -115,7 +117,7 @@ async def get_plot_image(
     filename_pattern = f"*_{date}_{hour:02d}h*.png"
     print(filename_pattern)
     # Use glob to search for files matching the pattern
-    matching_files = glob.glob(os.path.join(f"{out_dir}/bspm/{username}/{executionid}/", filename_pattern))
+    matching_files = glob.glob(os.path.join(f"{out_dir}/bspm/{username}/{date}/", filename_pattern))
 
     # Check if any matching files were found
     if matching_files:

@@ -5,7 +5,7 @@
 #export LD_PRELOAD=iri0.so
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/Libs/iri2016
 # Define the app name
-app_name="BSPM_May2023.py"
+app_name="BSPM_May2024.py"
 script_dir="$(pwd)"
 # Define the parent directory of the script directory
 parent_dir=$(dirname "$script_dir")
@@ -36,6 +36,10 @@ while [[ $# -gt 0 ]]; do
       executionid="$2"
       shift 2
       ;;
+    --rerun)
+      rerun="$2"
+      shift 2
+      ;;
     *)
       echo "{\"code\": -1, \"msg\": \"Unknown option: $1\"}"
       exit 1
@@ -58,6 +62,14 @@ fi
 output_folder="$parent_dir/out/bspm/$USER/$executionid"
 python_command="python3.9 $script_dir/../bspm/$app_name --year $year --month $month --day $day --executionid $executionid"
 #echo "$output_folder"
+
+# Check if rerun is provided, default is false, if true, remove the output folder
+if [ "$rerun" = "true" ]; then
+  if [ -d "$output_folder" ]; then
+    rm -rf "$output_folder"
+  fi
+fi
+
 # Check if the output folder exists; create it if it doesn't
 if [ ! -d "$output_folder" ]; then
   mkdir -p "$output_folder"
