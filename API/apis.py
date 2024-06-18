@@ -78,7 +78,11 @@ async def get_user_executions():
     user_directory = f"{out_dir}/bspm/{username}/"
     if os.path.exists(user_directory) and os.path.isdir(user_directory):
         folder_list = [f for f in os.listdir(user_directory) if os.path.isdir(os.path.join(user_directory, f))]
-        execution_list = []
+        # Sort the folders by date in descending order
+        folder_list.sort(reverse=True)
+        execution_list = {}
+        execution_list["progressing"] = []
+        execution_list["completed"] = []
 
         for folder in folder_list:
             folder_path = os.path.join(user_directory, folder)
@@ -93,7 +97,10 @@ async def get_user_executions():
                 "status": status,
                 "progress": f"{num_png_files}/24",
             }
-            execution_list.append(execution_info)
+            if status == "completed":
+                execution_list["completed"].append(execution_info)
+            else:
+                execution_list["progressing"].append(execution_info)
         # Convert the folder list to JSON format
         user_directories = {"user": username, "executions": execution_list}
         response = JSONResponse(content=user_directories)
