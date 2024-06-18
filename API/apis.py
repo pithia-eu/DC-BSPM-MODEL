@@ -81,7 +81,6 @@ async def get_user_executions():
         execution_list = []
 
         for folder in folder_list:
-            print(folder)
             folder_path = os.path.join(user_directory, folder)
             # Count the number of .png files in the folder
             png_files = [f for f in os.listdir(folder_path) if f.endswith(".png")]
@@ -92,6 +91,7 @@ async def get_user_executions():
             execution_info = {
                 "date": folder,
                 "status": status,
+                "progress": f"{num_png_files}/24",
             }
             execution_list.append(execution_info)
         # Convert the folder list to JSON format
@@ -127,8 +127,11 @@ async def get_plot_image(
         # Return the image as a FileResponse
         return FileResponse(image_path, media_type="image/png")
     else:
-        # Return a 404 Not Found response if no matching files were found
-        raise HTTPException(status_code=404, detail="Image not found")
+        # Get the list of files in the directory
+        files = os.listdir(f"{out_dir}/bspm/{username}/{date}/")
+        # Return the list of files with extension .png
+        files = [f for f in files if f.endswith(".png")]
+        return {"error": f"Image not found for the specified date and hour. The execution for {date} is in progress.", "available_plots": files, "status": "progressing"}
 
 
 @app.get("/download", summary="Download all the outputs by passing the execution date.", description="Returns the ZIP file of all outputs, including .png and .csv files.",tags=["Download"])
@@ -140,19 +143,28 @@ async def download_execution_data(date: str):
 
     # Check if the execution folder exists
     if os.path.exists(execution_path) and os.path.isdir(execution_path):
-        # Create a temporary zip file
-        zip_filename = f"{date}.zip"
-        zip_filepath = os.path.join(f"{out_dir}/bspm/{username}/", zip_filename)
-        with zipfile.ZipFile(zip_filepath, "w", zipfile.ZIP_DEFLATED) as zipf:
-            # Recursively add all files and subdirectories to the zip file
-            for root, dirs, files in os.walk(execution_path):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    arcname = os.path.relpath(file_path, execution_path)
-                    zipf.write(file_path, arcname=arcname)
 
-        # Return the zip file as a FileResponse
-        return FileResponse(zip_filepath, media_type="application/octet-stream", headers={"Content-Disposition": f"attachment; filename={zip_filename}"})
+        png_files = [f for f in os.listdir(execution_path) if f.endswith(".png")]
+        num_png_files = len(png_files)
+        # Determine the status based on the number of .png files
+        status = "completed" if num_png_files == 24 else "progressing"
+
+        if status == "progressing":
+            return {"error": f"Execution for date '{date}' is in progress.", "status": status, "progress": f"{num_png_files}/24"}
+
+        if status == "completed":
+            # Create a temporary zip file
+            zip_filename = f"{date}.zip"
+            zip_filepath = os.path.join(f"{out_dir}/bspm/{username}/", zip_filename)
+            with zipfile.ZipFile(zip_filepath, "w", zipfile.ZIP_DEFLATED) as zipf:
+                # Recursively add all files and subdirectories to the zip file
+                for root, dirs, files in os.walk(execution_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, execution_path)
+                        zipf.write(file_path, arcname=arcname)
+            # Return the zip file as a FileResponse
+            return FileResponse(zip_filepath, media_type="application/octet-stream", headers={"Content-Disposition": f"attachment; filename={zip_filename}"})
     else:
         # Return a 404 Not Found response if the execution folder does not exist
-        raise HTTPException(status_code=404, detail="Execution data not found")
+        return {"error": f"Execution folder for date '{date}' not found."}
