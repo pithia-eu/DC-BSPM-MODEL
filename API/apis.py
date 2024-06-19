@@ -110,7 +110,7 @@ async def get_user_executions():
             num_png_files = len(png_files)
             # Determine the status based on the number of .png files
             if status == "completed":
-                total_time = 24
+                total_time = num_png_files
             else:
                 status = "completed" if num_png_files == total_time else "progressing"
             # Add execution information to the list
