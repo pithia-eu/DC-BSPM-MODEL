@@ -86,16 +86,35 @@ async def get_user_executions():
 
         for folder in folder_list:
             folder_path = os.path.join(user_directory, folder)
+            # Check the last 2 lines of the log file to store in the log variable, and check if the execution is completed. The log file is stored in the folder with name 'app.log'
+            log_file = os.path.join(folder_path, "app.log")
+            status = "progressing"
+            log = None
+            execution_time = None
+            total_time = 24
+            if os.path.exists(log_file):
+                with open(log_file, "r") as f:
+                    log = f.readlines()[-2:]
+                    # Last 2 lines of the log file if the execution is completed:
+                    # BSPM COMPLETED
+                    # 2050.457169532776  seconds
+                    if "BSPM COMPLETED" in log:
+                        status = "completed"
+
             # Count the number of .png files in the folder
             png_files = [f for f in os.listdir(folder_path) if f.endswith(".png")]
             num_png_files = len(png_files)
             # Determine the status based on the number of .png files
-            status = "completed" if num_png_files == 24 else "progressing"
+            if status == "completed":
+                total_time = 24
+            else:
+                status = "completed" if num_png_files == total_time else "progressing"
             # Add execution information to the list
             execution_info = {
                 "date": folder,
                 "status": status,
-                "progress": f"{num_png_files}/24",
+                "progress": f"{num_png_files}/{total_time}",
+                "log": log,
             }
             if status == "completed":
                 execution_list["completed"].append(execution_info)
