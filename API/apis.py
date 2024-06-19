@@ -94,12 +94,16 @@ async def get_user_executions():
             total_time = 24
             if os.path.exists(log_file):
                 with open(log_file, "r") as f:
-                    log = f.readlines()[-2:]
-                    # Last 2 lines of the log file if the execution is completed:
-                    # BSPM COMPLETED
-                    # 2050.457169532776  seconds
-                    if "BSPM COMPLETED" in log:
-                        status = "completed"
+                    log = f.readlines()[-3:]
+                    # Last 3 lines of the log file if the execution is completed:
+                    # BSPM COMPLETED\n
+                    # 2050.457169532776  seconds\n
+                    # Loop all lines in the log variable to check if the execution is completed
+                    for line in log:
+                        if "BSPM COMPLETED" in line:
+                            status = "completed"
+                        if "seconds" in line:
+                            execution_time = float(line.split(' ')[0])
 
             # Count the number of .png files in the folder
             png_files = [f for f in os.listdir(folder_path) if f.endswith(".png")]
@@ -114,11 +118,12 @@ async def get_user_executions():
                 "date": folder,
                 "status": status,
                 "progress": f"{num_png_files}/{total_time}",
-                "log": log,
             }
             if status == "completed":
+                execution_info["execution_time"] = execution_time
                 execution_list["completed"].append(execution_info)
             else:
+                execution_info["log"] = log
                 execution_list["progressing"].append(execution_info)
         # Convert the folder list to JSON format
         user_directories = {"user": username, "executions": execution_list}
