@@ -60,7 +60,7 @@ fi
 
 # Define the output folder path
 output_folder="$parent_dir/out/bspm/$USER/$executionid"
-python_command="'IRI0_IRILIB64PATH=irilib64.so LD_PRELOAD=iri0.so python3.9 $script_dir/../bspm/$app_name --year $year --month $month --day $day --executionid $executionid'"
+python_command="IRI0_IRILIB64PATH=irilib64.so LD_PRELOAD=iri0.so python3.9 $script_dir/../bspm/$app_name --year $year --month $month --day $day --executionid $executionid"
 #echo "$output_folder"
 
 # Check if rerun is provided, default is false, if true, remove the output folder
@@ -75,7 +75,7 @@ if [ ! -d "$output_folder" ]; then
   mkdir -p "$output_folder"
   # echo "Created output folder: $output_folder"
   #IRI0_IRILIB64PATH=irilib64.so LD_PRELOAD=iri0.so python3.9 "$app_name" --year "$year" --month "$month" --day "$day" --executionid "$executionid" &
-  nohup bash -c $python_command > $output_folder/app.log 2>&1 &
+  nohup bash -c "$python_command" > "$output_folder/app.log" 2>&1 &
   echo "{\"code\": 0, \"msg\": \"Started a new execution of $app_name by date $executionid\",\"date\":\"$executionid\",\"status\":\"start\"}"
 else
   if pgrep -f "$app_name.*--executionid $executionid" > /dev/null; then
