@@ -14,7 +14,7 @@ from datetime import datetime
 script_dir = os.path.dirname(os.path.abspath(__file__))
 out_dir = os.path.normpath(os.path.join(script_dir, "../out/"))
 # Create the full path to the execute.sh script
-execute_script_path = os.path.join(script_dir, "../bspm/execute.sh")
+execute_script_path = os.path.join(script_dir, "../bspm/execute.py")
 app = FastAPI(
     openapi_tags=[
         {"name": "Execute", "description": "Run/Returns the status of execution by date: year-month-day"},
@@ -31,8 +31,8 @@ class ExecuteRequest(BaseModel):
     date: str
 
 
-@app.post("/execute", summary="Execute the BSPM by passing the date.", description="Returns the status of execution by date: year-month-day", tags=["Execute"])
-async def run_execute_script(date: str = Query(..., description="Date in the format 'YYYY-MM-DD'"), rerun: bool = Query(False, description="Force the script to rerun even if the output files already exist.")):
+@app.post("/execute_v0", include_in_schema=False, summary="Execute the BSPM by passing the date.", description="Returns the status of execution by date: year-month-day", tags=["Execute"])
+async def run_execute_script_v0(date: str = Query(..., description="Date in the format 'YYYY-MM-DD'"), rerun: bool = Query(False, description="Force the script to rerun even if the output files already exist.")):
     # Prepare the command to run execute.sh
     #command = f"{execute_script_path} --year {request.year} --month {request.month} --day {request.day}"
     #if request.executionid:
@@ -47,12 +47,12 @@ async def run_execute_script(date: str = Query(..., description="Date in the for
         command = f"{execute_script_path} --year {year} --month {month} --day {day}"
         if rerun:
             command += " --rerun true"
-        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=False, encoding="utf-8")
+        # output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=False, encoding="utf-8")
 
-        # Parse the output as JSON
+        os.system(f"python3 {command}")
         #print("Subprocess", output, "\n")
         #return output.strip()
-        result = json.loads(output.strip())
+        result = {"code":0, "message":"Execution submitted"}
 
         # Check the code in the result
         if result.get("code") == 0:
@@ -67,6 +67,52 @@ async def run_execute_script(date: str = Query(..., description="Date in the for
     except subprocess.CalledProcessError as e:
         # If the script exits with a non-zero status code, it's considered an error
         raise HTTPException(status_code=500, detail={"code": -1, "msg": "Error running execute.sh", "error_output": e.output})
+
+
+@app.post("/execute", summary="Execute the BSPM by passing the date.", description="Returns the status of execution by date: year-month-day", tags=["Execute"])
+async def run_execute_script(
+    date: str = Query(..., description="Date in the format 'YYYY-MM-DD'"),
+    rerun: bool = Query(False, description="Force the script to rerun even if the output files already exist.")
+):
+    try:
+        # Validate the date format
+        exec_date = datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use 'YYYY-MM-DD'.")
+
+    # Extract year, month, and day from the date
+    year = exec_date.year
+    month = exec_date.month
+    day = exec_date.day
+    executionid = f"{year:04d}-{month:02d}-{day:02d}"
+
+    # Define the app name and script directory
+    app_name = "BSPM_May2024.py"
+    script_dir = "/home/ubuntu/plasmasphere/DC-BPIM/bspm"
+    parent_dir = "/home/ubuntu/plasmasphere/DC-BPIM"
+    
+    # Set the environment variable
+    os.environ['LD_LIBRARY_PATH'] = f"/home/ubuntu/plasmasphere/DC-BPIM/bspm/Libs/iri2016"
+
+    # Define the output folder path
+    output_folder = f"{parent_dir}/out/bspm/ubuntu/{executionid}"
+    python_command = f"IRI0_IRILIB64PATH=irilib64.so LD_PRELOAD=iri0.so python3.9 {script_dir}/{app_name} --year {year} --month {month} --day {day} --executionid {executionid}"
+
+    # Check if rerun is provided, if true, remove the output folder
+    if rerun and os.path.isdir(output_folder):
+        subprocess.run(['rm', '-rf', output_folder])
+
+    # Check if the output folder exists; create it if it doesn't
+    if not os.path.isdir(output_folder):
+        os.makedirs(output_folder)
+        with open(f"{output_folder}/app.log", 'w') as log_file:
+            subprocess.Popen(python_command, shell=True, stdout=log_file, stderr=subprocess.STDOUT)
+        return {"code": 0, "msg": f"Started a new execution of {app_name} by date {executionid}", "date": executionid, "status": "start"}
+    else:
+        if subprocess.run(['pgrep', '-f', f"{app_name}.*--executionid {executionid}"]).returncode == 0:
+            return {"code": 0, "msg": f"App {app_name} on date {executionid} is already running.", "date": executionid, "status": "progressing"}
+        else:
+            return {"code": 1, "msg": f"App {app_name} on date {executionid} is completed.", "date": executionid, "status": "completed"}
 
 
 @app.get("/executions", summary="Retrieve a list of user executions.", description="Returns a list of executions completed by the user.",tags=["Retrieve Executions"])
