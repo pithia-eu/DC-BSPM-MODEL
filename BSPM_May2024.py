@@ -312,7 +312,7 @@ def calc_plasmapause ():
         #               os.path.join(pause_path,'ed_input.nml')]
         # subprocess.call(command_ed)  # run fortran program (first of the list) with the rest of the list of command_ed as input files
 
-        ed_input('../in/bspm/'+user+'/'+pause_input_filename)   # Translation fortran to python OK
+        ed_input('./in/bspm/'+user+'/'+pause_input_filename)   # Translation fortran to python OK
 
 #    exit()
     
@@ -324,7 +324,7 @@ def calc_plasmapause ():
     #                     os.path.join(user_path_in, pause_fkp_filename), os.path.join(pause_path,'fkp_main.nml')]
     #     subprocess.call(command_main) # run fortran program (first of the list) with the rest of the list of command_main as input files
     
-    fkp_main('../in/bspm/'+user+'/',pause_kp_filename,pause_fkp_filename)   # Translation ortran to python OK
+    fkp_main('./in/bspm/'+user+'/',pause_kp_filename,pause_fkp_filename)   # Translation ortran to python OK
 
 #    exit()
     
